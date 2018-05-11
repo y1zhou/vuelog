@@ -2,7 +2,7 @@
   "name": "vuelog",
   "version": "1.0.0",
   "description": "Blog built with Vue.js and Gin.",
-  "author": "Yi",
+  "author": "yi",
   "private": true,
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
