@@ -1,0 +1,55 @@
+pre {
+  display: block;
+  background: #f8f8f8;
+  padding: 1rem 1rem;
+  margin: 1rem 0;
+  color: #333333;
+  overflow-x: auto;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+pre > ::before {
+  color: #cccccc;
+  float: right;
+  line-height: 1rem;
+}
+:not(pre) > code {
+  margin: 0.5rem 0.1rem;
+  padding: 0.1rem 0.2rem;
+  background: #f8f8f8;
+  color: #f5751f;
+  border-radius: 3px;
+}
+.language-python::before {
+  content: 'Python';
+}
+.language-css::before {
+  content: 'CSS';
+}
+.language-html::before {
+  content: 'HTML';
+}
+.language-js::before {
+  content: 'JS';
+}
+.language-r::before {
+  content: 'R';
+}
+.language-go::before {
+  content: 'Go';
+}
+.language-bash::before {
+  content: 'Bash';
+}
+.language-sql::before {
+  content: 'SQL';
+}
+.language-json::before {
+  content: 'JSON';
+}
+.language-js::before {
+  content: 'JS';
+}
+.language-nginx::before {
+  content: 'Nginx';
+}
