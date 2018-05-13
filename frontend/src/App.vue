@@ -21,7 +21,7 @@ export default {
 
 <style lang="scss">
 @import url('https://fonts.googleapis.com/css?family=Raleway');
-$quotemark: url('assets/quotemark.png');
+$quotemark: url('./assets/quotemark.png');
 html,
 body {
   margin: 0;

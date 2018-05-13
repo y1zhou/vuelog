@@ -1,9 +1,10 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import HelloWorld from '@/components/HelloWorld'
-import Page404 from '@/components/Page404'
-import Login from '@/components/Login'
-import Search from '@/components/Search'
+const Home = () => import('./views/Home')
+const About = () => import('./views/About')
+const Login = () => import('./views/Login')
+const Search = () => import('./views/Search')
+const Page404 = () => import('./views/Page404')
 
 Vue.use(Router)
 
@@ -13,17 +14,12 @@ export default new Router({
     {
       path: '/',
       name: 'Home',
-      component: HelloWorld
-    },
-    {
-      path: '/tags',
-      name: 'Tags',
-      component: HelloWorld
+      component: Home
     },
     {
       path: '/about',
       name: 'About',
-      component: HelloWorld
+      component: About
     },
     {
       path: '/login',
@@ -36,8 +32,7 @@ export default new Router({
       component: Search
     },
     {
-      path: '/404',
-      name: 'Page404',
+      path: '*',
       component: Page404
     }
   ]

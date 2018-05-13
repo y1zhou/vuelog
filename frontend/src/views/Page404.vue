@@ -1,5 +1,5 @@
 <template>
-  <ediv class="message">
+  <div class="message">
     <el-card class="box-card" shadow="hover">
       <div slot="header">
         <h2>404 Not Found</h2>
@@ -8,7 +8,7 @@
       <el-input prefix-icon="el-icon-search" clearable v-model="searchContent" class="searchbar">
       </el-input>
     </el-card>
-  </ediv>
+  </div>
 </template>
 
 <script>
