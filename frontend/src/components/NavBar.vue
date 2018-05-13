@@ -5,14 +5,14 @@
         <img src="@/assets/logo-small.png" alt="logo" class="logo">
       </router-link>
     </el-col>
-    <el-col :span="13" pull="5" class="navbar-col _right">
-      <el-menu mode="horizontal" :router="true" :default-active="activeIndex" class="el-menu">
+    <el-col :span="13" :pull="5" class="navbar-col _right">
+      <el-menu :router="true" :default-active="activeIndex" mode="horizontal" class="el-menu">
         <el-menu-item index="/search">
           <i class="el-icon-search" />
         </el-menu-item>
         <el-menu-item index="/login">Login</el-menu-item>
         <el-menu-item index="/about">About</el-menu-item>
-        <el-menu-item index="/blog">Blog</el-menu-item>
+        <el-menu-item index="/tags">Tags</el-menu-item>
       </el-menu>
     </el-col>
   </el-row>
@@ -61,6 +61,7 @@ $almost-black: rgba(0, 0, 0, 0.15);
 .navbar {
   position: fixed;
   width: 100%;
+  height: inherit;
   top: 0;
   z-index: 900;
   background-color: $kinda-white;
@@ -68,11 +69,9 @@ $almost-black: rgba(0, 0, 0, 0.15);
   &.scrolled {
     box-shadow: 0 0.05rem 0.25rem $almost-black !important;
   }
-  height: 3rem;
 }
 .navbar-col {
   height: inherit;
-  line-height: 3rem;
   /deep/ & .el-input__inner {
     height: 2rem;
     background-color: $kinda-white !important;
@@ -94,7 +93,7 @@ $almost-black: rgba(0, 0, 0, 0.15);
   border: none;
   & > .el-menu-item {
     height: inherit;
-    line-height: 3rem;
+    line-height: inherit;
     font-family: Raleway;
     float: right;
     &:hover {

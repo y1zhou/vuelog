@@ -3,8 +3,7 @@
     <el-header id="header">
       <nav-bar/>
     </el-header>
-    <el-main>
-      <img src="./assets/logo.png">
+    <el-main id="app-content">
       <router-view/>
     </el-main>
   </el-container>
@@ -27,14 +26,23 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-size: 1rem;
-  line-height: 1.75rem;
   background-color: #f8f8f9;
-  text-align: center;
+}
+#app {
+  font-size: 1rem;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', Arial, sans-serif;
+  line-height: 1.75rem;
 }
 #header {
   height: 3rem !important;
+  line-height: 3rem;
   padding: 0;
+}
+#app-content {
+  margin: 0;
+  padding: 0;
+  justify-content: center;
 }
 
 blockquote {
