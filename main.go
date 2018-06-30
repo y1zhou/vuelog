@@ -3,7 +3,7 @@ package main // import "github.com/SCP-028/vuelog"
 import (
 	"net/http"
 
-	"vuelog/db"
+	"github.com/SCP-028/vuelog/db"
 
 	"github.com/gin-gonic/gin"
 )
