@@ -10,7 +10,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-const (
+var (
 	// DbUser ...
 	DbUser = os.Getenv("PSQL_USER")
 	// DbName ...
