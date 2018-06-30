@@ -70,8 +70,8 @@ type Users struct {
 func Init() {
 	dbinfo := fmt.Sprintf("host=%s dbname=%s user=%s password=%s", DbHost, DbName, DbUser, DbPass)
 	db, err := gorm.Open("postgres", dbinfo)
-	db.AutoMigrate(&Contents{}, &Metas{}, &Relationships{}, &Users{})
 	checkErr(err)
+	db.AutoMigrate(&Contents{}, &Metas{}, &Relationships{}, &Users{})
 	defer db.Close()
 }
 
