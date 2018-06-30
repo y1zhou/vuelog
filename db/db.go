@@ -11,10 +11,12 @@ import (
 )
 
 var (
-	// DbUser ...
-	DbUser = os.Getenv("PSQL_USER")
+	// DbHost ...
+	DbHost = os.Getenv("PSQL_HOST")
 	// DbName ...
 	DbName = os.Getenv("PSQL_DB")
+	// DbUser ...
+	DbUser = os.Getenv("PSQL_USER")
 	// DbPass ...
 	DbPass = os.Getenv("PSQL_PASSWORD")
 )
@@ -66,7 +68,7 @@ type Users struct {
 
 // Init connects to the PostgreSQL database.
 func Init() {
-	dbinfo := fmt.Sprintf("user=%s dbname=%s password=%s", DbUser, DbName, DbPass)
+	dbinfo := fmt.Sprintf("host=%s dbname=%s user=%s password=%s", DbHost, DbName, DbUser, DbPass)
 	db, err := gorm.Open("postgres", dbinfo)
 	db.AutoMigrate(&Contents{}, &Metas{}, &Relationships{}, &Users{})
 	checkErr(err)
