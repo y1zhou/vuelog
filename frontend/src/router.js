@@ -1,10 +1,10 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-const Home = () => import('./views/Home')
-const About = () => import('./views/About')
+import Home from './views/Home'
+import About from './views/About'
+import Search from './views/Search'
+import Page404 from './views/Page404'
 const Login = () => import('./views/Login')
-const Search = () => import('./views/Search')
-const Page404 = () => import('./views/Page404')
 
 Vue.use(Router)
 

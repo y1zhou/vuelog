@@ -10,15 +10,20 @@ import (
 
 func main() {
 	r := gin.Default()
-	db.Init()
-	// group: api
+	db.UpdateSchema()
+
 	api := r.Group("/api")
 	{
+		// Test if the server is working
 		api.GET("/ping", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "pong",
 			})
 		})
+
+		/*** Users API ***/
+		api.POST("/user/signup", db.CreateUser)
+		api.POST("/user/delete", db.DeleteUser)
 	}
 	r.Run(":9587")
 }
