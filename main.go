@@ -24,6 +24,8 @@ func main() {
 		/*** Users API ***/
 		api.POST("/user/signup", db.CreateUser)
 		api.POST("/user/delete", db.DeleteUser)
+		api.PUT("/user/modify", db.ChangePassword)
+		api.GET("/users", db.FetchAllUsers)
 	}
 	r.Run(":9587")
 }

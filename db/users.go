@@ -9,27 +9,35 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type (
+	userTmpl struct {
+		User        string `form:"username" json:"username" binding:"required"`
+		Password    string `form:"password" json:"password" binding:"required,min=6"`
+		ConfirmPass string `form:"cofirmPass" json:"cofirmPass" binding:"omitempty,eqfield=Password"`
+		Email       string `form:"email" json:"email" binding:"omitempty,email"`
+	}
+	alterTmpl struct {
+		User     string `form:"username" json:"username" binding:"required"`
+		Password string `form:"password" json:"password" binding:"required,min=6"`
+		NewPass  string `form:"newPass" json:"newPass" binding:"required,min=6,nefield=Password"`
+	}
+)
+
 // CreateUser INSERT INTO users table. Does nothing if username already exists.
 func CreateUser(c *gin.Context) {
-	password := c.PostForm("password")
-	if len(password) < 6 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": http.StatusBadRequest,
-			"msg":    "",
-			"err":    "Password should be at least 6 characters.",
-		})
-	} else {
+	var json userTmpl
+	if errs := c.ShouldBind(&json); errs == nil {
 		db := Init()
 		defer db.Close()
 
-		hash, _ := hashPassword(password)
+		hash, _ := hashPassword(json.Password)
 		user := Users{
-			Name:     c.PostForm("username"),
+			Name:     json.User,
 			Password: hash,
+			Email:    json.Email,
 		}
-		if db.NewRecord(user) {
+		if err := db.Create(&user).Error; err == nil {
 			// Create new user
-			db.Create(&user)
 			c.JSON(http.StatusCreated, gin.H{
 				"status": http.StatusCreated,
 				"msg":    fmt.Sprintf("Successfully created user %s", user.Name),
@@ -40,75 +48,99 @@ func CreateUser(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": http.StatusBadRequest,
 				"msg":    "",
-				"err":    fmt.Sprintf("Username %s already exists.", user.Name),
+				"err":    err,
 			})
 		}
+	} else {
+		// Form validation errors
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    "",
+			"err":    errs,
+		})
 	}
 }
 
 // DeleteUser actually a soft delete as there's the "deleted_at" field.
 func DeleteUser(c *gin.Context) {
+	var json userTmpl
 	db := Init()
 	defer db.Close()
 
-	username := c.PostForm("username")
-	hash, _ := hashPassword(c.PostForm("password"))
-
-	var user Users
-	if err := db.Where("name = ?", username).First(&user).Error; gorm.IsRecordNotFoundError(err) {
-		// User not found
-		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound,
-			"msg":    "",
-			"err":    err,
-		})
-	} else {
-		if user.Password == hash {
-			// Soft delete user
-			db.Delete(&user)
-			c.JSON(http.StatusOK, gin.H{
-				"status": http.StatusOK,
-				"msg":    fmt.Sprintf("User %s deleted.", username),
-				"err":    "",
+	if errs := c.ShouldBind(&json); errs == nil {
+		var user Users
+		if err := db.Where("name = ?", json.User).First(&user).Error; gorm.IsRecordNotFoundError(err) {
+			// User not found
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": http.StatusNotFound,
+				"msg":    "",
+				"err":    err,
 			})
+		} else {
+			if checkPasswordHash(json.Password, user.Password) {
+				// Soft delete user
+				db.Delete(&user)
+				c.JSON(http.StatusOK, gin.H{
+					"status": http.StatusOK,
+					"msg":    fmt.Sprintf("User %s deleted.", json.User),
+					"err":    "",
+				})
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"status": http.StatusBadRequest,
+					"msg":    "",
+					"err":    fmt.Sprintf("Wrong password for user %s", user.Name),
+				})
+			}
 		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    "",
+			"err":    errs,
+		})
 	}
 }
 
 // ChangePassword ...
 func ChangePassword(c *gin.Context) {
-	db := Init()
-	defer db.Close()
+	var json alterTmpl
+	if errs := c.ShouldBind(&json); errs == nil {
+		db := Init()
+		defer db.Close()
+		var user Users
 
-	username := c.PostForm("username")
-	oldHash, _ := hashPassword(c.PostForm("old_password"))
-	var user Users
-
-	if err := db.Where("name = ?", username).First(&user).Error; err != nil {
-		// User not found
-		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound,
-			"msg":    "",
-			"err":    err,
-		})
-	} else {
-		if user.Password == oldHash {
-			// Old password correct
-			newHash, _ := hashPassword(c.PostForm("new_password"))
-			user.Password = newHash
-			db.Save(&user)
-			c.JSON(http.StatusOK, gin.H{
-				"status": http.StatusOK,
-				"msg":    fmt.Sprintf("Successfully updated password for user %s", user.Name),
-				"err":    "",
+		if err := db.Where("name = ?", json.User).First(&user).Error; err != nil {
+			// User not found
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": http.StatusNotFound,
+				"msg":    "",
+				"err":    err,
 			})
 		} else {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status": http.StatusBadRequest,
-				"msg":    "",
-				"err":    fmt.Sprintf("Wrong password for user %s.", username),
-			})
+			if checkPasswordHash(json.Password, user.Password) {
+				newHash, _ := hashPassword(json.NewPass)
+				db.Model(&user).Update("password", newHash)
+				c.JSON(http.StatusOK, gin.H{
+					"status": http.StatusOK,
+					"msg":    fmt.Sprintf("Successfully updated password for user %s", user.Name),
+					"err":    "",
+				})
+			} else {
+				// Old password doesn't match
+				c.JSON(http.StatusBadRequest, gin.H{
+					"status": http.StatusBadRequest,
+					"msg":    "",
+					"err":    fmt.Sprintf("Wrong password for user %s.", user.Name),
+				})
+			}
 		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    "",
+			"err":    errs,
+		})
 	}
 }
 
@@ -118,7 +150,9 @@ func FetchAllUsers(c *gin.Context) {
 	defer db.Close()
 
 	var users []Users
-	db.Select("uid, name, email, group, created_at, updated_at").Find(&users)
+	db.Select("uid, name, email, created_at, updated_at").
+		Where("deleted_at is NULL").
+		Find(&users)
 	userNum := len(users)
 	if userNum <= 0 {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -128,7 +162,7 @@ func FetchAllUsers(c *gin.Context) {
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"status": http.StatusNotFound,
+			"status": http.StatusOK,
 			"msg":    fmt.Sprintf("Returning %d users.", userNum),
 			"err":    "",
 			"data":   users,

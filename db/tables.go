@@ -45,7 +45,6 @@ type (
 		CreatedAt time.Time `gorm:"type:timestamp with time zone;INDEX:users_created"`
 		UpdatedAt time.Time `gorm:"type:timestamp with time zone"`
 		DeletedAt time.Time `gorm:"type:timestamp with time zone;DEFAULT:NULL"`
-		Group     string    `gorm:"type:varchar(16);DEFAULT:'vistor'"`
 		Email     string    `gorm:"type:varchar(200);UNIQUE;DEFAULT:NULL"`
 	}
 )

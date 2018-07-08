@@ -22,7 +22,7 @@ var (
 
 // Init connects to the PostgreSQL database.
 func Init() *gorm.DB {
-	dbinfo := fmt.Sprintf("host=%s dbname=%s user=%s password=%s", DbHost, DbName, DbUser, DbPass)
+	dbinfo := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable", DbHost, DbName, DbUser, DbPass)
 	db, err := gorm.Open("postgres", dbinfo)
 	checkFatalError(err)
 	return db
