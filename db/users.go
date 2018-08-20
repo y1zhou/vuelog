@@ -4,72 +4,64 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type (
-	userTmpl struct {
-		User        string `form:"username" json:"username" binding:"required"`
-		Password    string `form:"password" json:"password" binding:"required,min=6"`
-		ConfirmPass string `form:"cofirmPass" json:"cofirmPass" binding:"omitempty,eqfield=Password"`
-		Email       string `form:"email" json:"email" binding:"omitempty,email"`
-	}
-	alterTmpl struct {
-		User     string `form:"username" json:"username" binding:"required"`
-		Password string `form:"password" json:"password" binding:"required,min=6"`
-		NewPass  string `form:"newPass" json:"newPass" binding:"required,min=6,nefield=Password"`
-	}
-)
-
 // CreateUser INSERT INTO users table. Does nothing if username already exists.
 func CreateUser(c *gin.Context) {
-	var json userTmpl
-	if errs := c.ShouldBind(&json); errs == nil {
+	var json userSignupForm
+	if err := c.ShouldBind(&json); err != nil {
+		// Form validation errors
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    "",
+			"err":    err,
+		})
+	} else {
 		db := Init()
 		defer db.Close()
-
 		hash, _ := hashPassword(json.Password)
 		user := Users{
-			Name:     json.User,
+			Name:     json.Username,
 			Password: hash,
 			Email:    json.Email,
 		}
-		if err := db.Create(&user).Error; err == nil {
-			// Create new user
-			c.JSON(http.StatusCreated, gin.H{
-				"status": http.StatusCreated,
-				"msg":    fmt.Sprintf("Successfully created user %s", user.Name),
-				"err":    "",
-			})
-		} else {
+		if err := db.Create(&user).Error; err != nil {
 			// User already exists
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": http.StatusBadRequest,
 				"msg":    "",
 				"err":    err,
 			})
+		} else {
+			// Create new user
+			c.JSON(http.StatusCreated, gin.H{
+				"status": http.StatusCreated,
+				"msg":    fmt.Sprintf("Successfully created user %s", user.Name),
+				"err":    "",
+			})
 		}
-	} else {
-		// Form validation errors
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": http.StatusBadRequest,
-			"msg":    "",
-			"err":    errs,
-		})
 	}
 }
 
 // DeleteUser actually a soft delete as there's the "deleted_at" field.
 func DeleteUser(c *gin.Context) {
-	var json userTmpl
-	db := Init()
-	defer db.Close()
-
-	if errs := c.ShouldBind(&json); errs == nil {
+	var json userDeleteForm
+	if err := c.ShouldBind(&json); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    "",
+			"err":    err,
+		})
+	} else {
+		db := Init()
+		defer db.Close()
 		var user Users
-		if err := db.Where("name = ?", json.User).First(&user).Error; gorm.IsRecordNotFoundError(err) {
+		if err := db.Where("name = ?", json.Username).
+			First(&user).Error; gorm.IsRecordNotFoundError(err) {
 			// User not found
 			c.JSON(http.StatusNotFound, gin.H{
 				"status": http.StatusNotFound,
@@ -82,7 +74,7 @@ func DeleteUser(c *gin.Context) {
 				db.Delete(&user)
 				c.JSON(http.StatusOK, gin.H{
 					"status": http.StatusOK,
-					"msg":    fmt.Sprintf("User %s deleted.", json.User),
+					"msg":    fmt.Sprintf("User %s deleted.", json.Username),
 					"err":    "",
 				})
 			} else {
@@ -93,24 +85,18 @@ func DeleteUser(c *gin.Context) {
 				})
 			}
 		}
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": http.StatusBadRequest,
-			"msg":    "",
-			"err":    errs,
-		})
 	}
 }
 
-// ChangePassword ...
-func ChangePassword(c *gin.Context) {
-	var json alterTmpl
+// UpdateUser ...
+func UpdateUser(c *gin.Context) {
+	var json userUpdateForm
 	if errs := c.ShouldBind(&json); errs == nil {
 		db := Init()
 		defer db.Close()
 		var user Users
 
-		if err := db.Where("name = ?", json.User).First(&user).Error; err != nil {
+		if err := db.Where("name = ?", json.Username).First(&user).Error; err != nil {
 			// User not found
 			c.JSON(http.StatusNotFound, gin.H{
 				"status": http.StatusNotFound,
@@ -120,7 +106,8 @@ func ChangePassword(c *gin.Context) {
 		} else {
 			if checkPasswordHash(json.Password, user.Password) {
 				newHash, _ := hashPassword(json.NewPass)
-				db.Model(&user).Update("password", newHash)
+				db.Model(&user).
+					Updates(map[string]interface{}{"password": newHash, "email": json.Email})
 				c.JSON(http.StatusOK, gin.H{
 					"status": http.StatusOK,
 					"msg":    fmt.Sprintf("Successfully updated password for user %s", user.Name),
@@ -167,6 +154,63 @@ func FetchAllUsers(c *gin.Context) {
 			"err":    "",
 			"data":   users,
 		})
+	}
+}
+
+// QueryUser ...
+func QueryUser(c *gin.Context) {
+	var json userQueryForm
+}
+
+// LoginUser Start login session
+func LoginUser(c *gin.Context) {
+	var json userLoginForm
+	session := sessions.Default(c)
+	if errs := c.ShouldBind(&json); errs == nil {
+		db := Init()
+		defer db.Close()
+		var user Users
+
+		if err := db.Where("name = ?", json.Username).First(&user).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": http.StatusNotFound,
+				"msg":    "",
+				"err":    err,
+			})
+		} else {
+			if checkPasswordHash(json.Password, user.Password) {
+				session.Set("user", user.UID)
+				session.Save()
+				c.JSON(http.StatusOK, gin.H{
+					"status": http.StatusOK,
+					"msg":    fmt.Sprintf("User %s successfully logged in!", user.Name),
+					"err":    "",
+				})
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"status": http.StatusBadRequest,
+					"msg":    "",
+					"err":    fmt.Sprintf("Wrong password for user %s.", user.Name),
+				})
+			}
+		}
+	}
+}
+
+// AuthUser Check if user session is logged in
+func AuthUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		userID := session.Get("user")
+		if userID == nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": http.StatusBadRequest,
+				"msg":    "",
+				"err":    "Invalid session token.",
+			})
+		} else {
+			c.Next()
+		}
 	}
 }
 
